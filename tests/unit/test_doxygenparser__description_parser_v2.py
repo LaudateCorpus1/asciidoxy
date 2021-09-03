@@ -17,7 +17,8 @@ import xml.etree.ElementTree as ET
 
 from asciidoxy.parser.doxygen.description_parser_v2 import (DescriptionElement,
                                                             NestedDescriptionElement,
-                                                            parse_description)
+                                                            parse_description,
+                                                            select_descriptions)
 
 
 def debug_print(element: DescriptionElement, prefix: str = "") -> None:
@@ -447,3 +448,81 @@ Some other test classes are:
 * <<classasciidoxy_1_1descriptions_1_1_sections,Sections>> for all kinds of sections.
 
 Of course there is also <<descriptions_8hpp_1ac2b05985028362b43839a108f8b30a24,FunctionDocumentation()>>."""
+
+
+def test_select_descriptions__use_brief_and_detailed_as_in_xml():
+    brief_xml = """\
+    <briefdescription>
+<para>Description with all kinds of Doxygen styles.</para>
+    </briefdescription>
+"""
+    detailed_xml = """\
+        <detaileddescription>
+<para>Several <emphasis>words</emphasis> in this <emphasis>sentence</emphasis> are <emphasis>italic</emphasis>.</para>
+<para>Several <bold>words</bold> in this <bold>sentence</bold> are <bold>bold</bold>.</para>
+<para>Also a <computeroutput>some</computeroutput> words in <computeroutput>monotype</computeroutput>. </para>
+        </detaileddescription>
+"""
+    brief, detailed = select_descriptions(parse(brief_xml), parse(detailed_xml))
+    assert brief == """\
+Description with all kinds of Doxygen styles."""
+    assert detailed == """\
+Several __words__ in this __sentence__ are __italic__.
+
+Several **words** in this **sentence** are **bold**.
+
+Also a ``some`` words in ``monotype``."""
+
+
+def test_select_descriptions__take_first_para_from_detailed():
+    brief_xml = """\
+    <briefdescription>
+    </briefdescription>
+"""
+    detailed_xml = """\
+        <detaileddescription>
+<para>Description with all kinds of Doxygen styles.</para>
+<para>Several <emphasis>words</emphasis> in this <emphasis>sentence</emphasis> are <emphasis>italic</emphasis>.</para>
+<para>Several <bold>words</bold> in this <bold>sentence</bold> are <bold>bold</bold>.</para>
+<para>Also a <computeroutput>some</computeroutput> words in <computeroutput>monotype</computeroutput>. </para>
+        </detaileddescription>
+"""
+    brief, detailed = select_descriptions(parse(brief_xml), parse(detailed_xml))
+    assert brief == """\
+Description with all kinds of Doxygen styles."""
+    assert detailed == """\
+Several __words__ in this __sentence__ are __italic__.
+
+Several **words** in this **sentence** are **bold**.
+
+Also a ``some`` words in ``monotype``."""
+
+
+def test_select_descriptions__take_only_para_from_detailed():
+    brief_xml = """\
+    <briefdescription>
+    </briefdescription>
+"""
+    detailed_xml = """\
+        <detaileddescription>
+<para>Description with all kinds of Doxygen styles.</para>
+        </detaileddescription>
+"""
+    brief, detailed = select_descriptions(parse(brief_xml), parse(detailed_xml))
+    assert brief == """\
+Description with all kinds of Doxygen styles."""
+    assert detailed == ""
+
+
+def test_select_descriptions__no_descriptions_at_all():
+    brief_xml = """\
+    <briefdescription>
+    </briefdescription>
+"""
+    detailed_xml = """\
+        <detaileddescription>
+        </detaileddescription>
+"""
+    brief, detailed = select_descriptions(parse(brief_xml), parse(detailed_xml))
+    assert brief == ""
+    assert detailed == ""

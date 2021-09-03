@@ -16,7 +16,7 @@
 import xml.etree.ElementTree as ET
 
 from abc import ABC, abstractmethod
-from typing import List, Mapping, Optional, Type, cast
+from typing import List, Mapping, Optional, Tuple, Type, cast
 
 
 def parse_description(xml_root: ET.Element) -> "ParaContainer":
@@ -35,6 +35,29 @@ def parse_description(xml_root: ET.Element) -> "ParaContainer":
         _parse_description(xml_element, contents)
     contents.normalize()
     return contents
+
+
+def select_descriptions(brief: "ParaContainer", detailed: "ParaContainer") -> Tuple[str, str]:
+    """Select the approprate brief and detailed descriptions.
+
+    Sometimes one of the descriptions is missing. This method makes sure there is always at least
+    a brief description.
+
+    Args:
+        brief: Brief description as found in the XML.
+        detailed: Detailed description as found in the XML.
+
+    Returns:
+        brief: Brief description to use.
+        detailed: Detailed description to use.
+    """
+    brief_adoc = brief.to_asciidoc()
+    if brief_adoc:
+        return brief_adoc, detailed.to_asciidoc()
+
+    if detailed.contents:
+        brief.contents.append(detailed.contents.pop(0))
+    return brief.to_asciidoc(), detailed.to_asciidoc()
 
 
 class DescriptionElement(ABC):
