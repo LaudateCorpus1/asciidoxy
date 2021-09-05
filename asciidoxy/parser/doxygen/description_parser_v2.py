@@ -16,10 +16,10 @@
 import xml.etree.ElementTree as ET
 
 from abc import ABC, abstractmethod
-from typing import List, Mapping, Optional, Tuple, Type, cast
+from typing import List, Mapping, Optional, Tuple, Type, TypeVar
 
 
-def parse_description(xml_root: ET.Element) -> "ParaContainer":
+def parse_description(xml_root: Optional[ET.Element]) -> "ParaContainer":
     """Parse a description from Doxygen XML.
 
     Expects either `briefdescription` or `detaileddescription`. In case of `detaileddescription` it
@@ -31,9 +31,10 @@ def parse_description(xml_root: ET.Element) -> "ParaContainer":
         A container with description paragraphs and sections.
     """
     contents = ParaContainer()
-    for xml_element in xml_root:
-        _parse_description(xml_element, contents)
-    contents.normalize()
+    if xml_root is not None:
+        for xml_element in xml_root:
+            _parse_description(xml_element, contents)
+        contents.normalize()
     return contents
 
 
@@ -173,10 +174,12 @@ class ParaContainer(NestedDescriptionElement):
 
         self.contents = new_contents
 
-    def pop_section(self, name: str) -> Optional["NamedSection"]:
+    SectionT = TypeVar("SectionT", bound="NamedSection")
+
+    def pop_section(self, section_type: Type[SectionT], name: str) -> Optional[SectionT]:
         for i, child in enumerate(self.contents):
-            if isinstance(child, NamedSection) and child.name == name:
-                return cast(NamedSection, self.contents.pop(i))
+            if isinstance(child, section_type) and child.name == name:
+                return self.contents.pop(i)
         return None
 
 
@@ -273,6 +276,7 @@ class Style(NestedDescriptionElement):
         "emphasis": "__",
         "bold": "**",
         "computeroutput": "``",
+        "verbatim": "``",
     }
 
     kind: str
@@ -453,6 +457,7 @@ def _parse_description(xml_element: ET.Element, parent: NestedDescriptionElement
         "ref": Ref,
         "plantuml": Diagram,
         "dot": Diagram,
+        "verbatim": Style,
     }
 
     # Map of element tags that update the parent element.

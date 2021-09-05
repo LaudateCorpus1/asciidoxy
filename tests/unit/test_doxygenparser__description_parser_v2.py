@@ -15,10 +15,9 @@
 
 import xml.etree.ElementTree as ET
 
-from asciidoxy.parser.doxygen.description_parser_v2 import (DescriptionElement,
-                                                            NestedDescriptionElement,
-                                                            parse_description,
-                                                            select_descriptions)
+from asciidoxy.parser.doxygen.description_parser_v2 import (DescriptionElement, NamedSection,
+                                                            NestedDescriptionElement, ParameterList,
+                                                            parse_description, select_descriptions)
 
 
 def debug_print(element: DescriptionElement, prefix: str = "") -> None:
@@ -369,7 +368,7 @@ def test_parse_function():
 """
     output = parse(input_xml)
 
-    templateparam_section = output.pop_section("templateparam")
+    templateparam_section = output.pop_section(ParameterList, "templateparam")
     assert templateparam_section is not None
     assert templateparam_section.name == "templateparam"
     assert len(templateparam_section.contents) == 1
@@ -377,7 +376,7 @@ def test_parse_function():
     assert not templateparam_section.contents[0].direction
     assert templateparam_section.contents[0].to_asciidoc() == "The type to do something with."
 
-    exception_section = output.pop_section("exception")
+    exception_section = output.pop_section(ParameterList, "exception")
     assert exception_section is not None
     assert exception_section.name == "exception"
     assert len(exception_section.contents) == 1
@@ -385,7 +384,7 @@ def test_parse_function():
     assert not exception_section.contents[0].direction
     assert exception_section.contents[0].to_asciidoc() == "Something is wrong with the logic."
 
-    retval_section = output.pop_section("retval")
+    retval_section = output.pop_section(ParameterList, "retval")
     assert retval_section is not None
     assert retval_section.name == "retval"
     assert len(retval_section.contents) == 2
@@ -396,13 +395,13 @@ def test_parse_function():
     assert not retval_section.contents[1].direction
     assert retval_section.contents[1].to_asciidoc() == "Something went wrong."
 
-    return_section = output.pop_section("return")
+    return_section = output.pop_section(NamedSection, "return")
     assert return_section is not None
     assert return_section.name == "return"
     assert len(return_section.contents) == 1
     assert return_section.contents[0].to_asciidoc() == "A status code"
 
-    param_section = output.pop_section("param")
+    param_section = output.pop_section(ParameterList, "param")
     assert param_section is not None
     assert param_section.name == "param"
     assert len(param_section.contents) == 3
